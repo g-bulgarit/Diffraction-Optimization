@@ -1,3 +1,6 @@
 pip-wheel-metadata/*
 *.egg-info
 venv/*
+.vscode/*
+*/__pycache__/*
+*.pyc
