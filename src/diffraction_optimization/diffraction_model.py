@@ -10,7 +10,9 @@ from diffraction_optimization.image_proccessing import (
     parse_mnist_digit_to_matrix,
     grayscale_to_phase,
     generate_random_phase_mask,
-    generate_slit_phase_mask
+    generate_slit_phase_mask,
+    generate_donut_phase_mask,
+    generate_horizontal_line,
 )
 
 
@@ -130,12 +132,14 @@ if __name__ == "__main__":
 
     input_images = []
     for digit in [0, 1]:
-        single_digit_vector = get_vectors_of_specific_digit(dataset, digit).iloc[0]
+        single_digit_vector = get_vectors_of_specific_digit(dataset, digit).iloc[888]
         img = parse_mnist_digit_to_matrix(single_digit_vector)
         phase_img = grayscale_to_phase(img)
         input_images.append(phase_img)
 
-    phase_mask = generate_random_phase_mask()
+    # phase_mask = generate_random_phase_mask()
+    # phase_mask = generate_donut_phase_mask(0, 4)
+    phase_mask = generate_horizontal_line()
     # phase_mask = generate_slit_phase_mask(width=3, height=16, steps=7)
     # phase_mask = np.zeros((28, 28))
     # for idx in range(0, 27, 7):
