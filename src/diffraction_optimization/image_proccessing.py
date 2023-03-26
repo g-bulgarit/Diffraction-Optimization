@@ -12,9 +12,13 @@ def grayscale_to_phase(input_img: np.ndarray) -> np.ndarray:
     return (input_img / 255) * 2 * np.pi
 
 
+def generate_random_mask():
+    return np.random.rand(28, 28) * 2 * np.pi
+
+
 def display_digit(digit_matrix: np.ndarray, digit_label=None) -> None:
     plt.imshow(digit_matrix)
     if digit_label:
         plt.title(f"{digit_label}")
-        plt.colorbar()
+    plt.colorbar()
     plt.show()

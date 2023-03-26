@@ -7,7 +7,7 @@ from pytest import fixture
 from diffraction_optimization.file_io import (get_vectors_of_specific_digit,
                                               load_dataset_csv_to_df)
 from diffraction_optimization.image_proccessing import (
-    grayscale_to_phase, parse_mnist_digit_to_matrix)
+    generate_random_mask, grayscale_to_phase, parse_mnist_digit_to_matrix)
 
 
 @fixture
@@ -33,3 +33,8 @@ def test_grayscale_to_phase(get_digit):
     phase_digit = grayscale_to_phase(digit)
     assert np.max(phase_digit) <= 2 * np.pi
     assert np.min(phase_digit) >= 0
+
+
+def test_generate_random_mask():
+    random_mask = generate_random_mask()
+    assert random_mask.shape == (28, 28)
