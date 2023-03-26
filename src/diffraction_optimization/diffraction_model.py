@@ -10,6 +10,7 @@ from diffraction_optimization.image_proccessing import (
     parse_mnist_digit_to_matrix,
     grayscale_to_phase,
     generate_random_phase_mask,
+    generate_slit_phase_mask
 )
 
 
@@ -74,7 +75,7 @@ class DiffractionSystem:
     def calculate_images_at_output_plane(self):
         self.output_images = []
         for image in self.input_images:
-            E = image + self.phase_mask
+            E = image * self.phase_mask
             k = 2 * np.pi / self.wavelength_mm
             propagated_fft = fft2(
                 E
@@ -135,6 +136,7 @@ if __name__ == "__main__":
         input_images.append(phase_img)
 
     phase_mask = generate_random_phase_mask()
+    # phase_mask = generate_slit_phase_mask(width=3, height=16, steps=7)
     # phase_mask = np.zeros((28, 28))
     # for idx in range(0, 27, 7):
     #     phase_mask[:, idx : idx + 3] = 2 * np.pi
@@ -143,8 +145,8 @@ if __name__ == "__main__":
         system = DiffractionSystem(
             screen_height_mm=distance_mm // 100,
             screen_width_mm=distance_mm // 100,
-            num_samples_x=102,
-            num_samples_y=102,
+            num_samples_x=121,
+            num_samples_y=121,
             screen_position_z_mm=distance_mm,
         )
         system.set_input_images(input_images)

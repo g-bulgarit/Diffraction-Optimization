@@ -16,6 +16,14 @@ def generate_random_phase_mask():
     return np.random.rand(28, 28) * 2 * np.pi
 
 
+def generate_slit_phase_mask(width: int, height: int, steps: int):
+    phase_mask = np.zeros((28, 28))
+    for idx in range(0, 28, steps):
+        h = (28 - height) // 2
+        phase_mask[h:28-h, idx : idx + width] = 2 * np.pi
+    return phase_mask
+
+
 def display_digit(digit_matrix: np.ndarray, digit_label=None) -> None:
     plt.imshow(digit_matrix)
     if digit_label:
