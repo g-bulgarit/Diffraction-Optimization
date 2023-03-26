@@ -1,5 +1,7 @@
 from pytest import fixture
-from diffraction_optimization.file_io import load_dataset_csv_to_df, get_vectors_of_specific_digit
+
+from diffraction_optimization.file_io import (get_vectors_of_specific_digit,
+                                              load_dataset_csv_to_df)
 
 
 @fixture
