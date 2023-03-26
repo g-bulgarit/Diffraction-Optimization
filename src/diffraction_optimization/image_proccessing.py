@@ -12,7 +12,7 @@ def grayscale_to_phase(input_img: np.ndarray) -> np.ndarray:
     return (input_img / 255) * 2 * np.pi
 
 
-def generate_random_mask():
+def generate_random_phase_mask():
     return np.random.rand(28, 28) * 2 * np.pi
 
 
