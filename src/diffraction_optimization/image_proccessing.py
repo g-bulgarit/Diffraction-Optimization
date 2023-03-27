@@ -34,9 +34,25 @@ def generate_donut_phase_mask(inner_radius: int, outer_radius: int) -> np.ndarra
     return phase_mask
 
 
+def normalize_output_image(output_image: np.ndarray) -> np.ndarray:
+    power_image = np.abs(output_image)
+    return (255 * power_image / np.max(power_image)).astype(np.uint8)
+
+
 def generate_horizontal_line() -> np.ndarray:
     phase_mask = np.zeros((28, 28))
-    phase_mask[13:15, :] = 1
+    phase_mask[13:15, :] = np.pi
+    return phase_mask
+
+
+def mutate_phase_mask(phase_mask: np.ndarray) -> np.ndarray:
+    pixels_to_change = np.random.randint(0, 6)
+    for _ in range(pixels_to_change):
+        x, y = np.random.randint(0, 28, 2)
+        phase_mask[x, y] += 1 * np.pi
+
+    # Clamp values
+    phase_mask[phase_mask > 2 * np.pi] = 2 * np.pi
     return phase_mask
 
 
