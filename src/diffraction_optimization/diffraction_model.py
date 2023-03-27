@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List
+from typing import List, Tuple
 from matplotlib import pyplot as plt
 from scipy.fftpack import fft2, fftshift
 from diffraction_optimization.file_io import (
@@ -9,10 +9,8 @@ from diffraction_optimization.file_io import (
 from diffraction_optimization.image_proccessing import (
     parse_mnist_digit_to_matrix,
     grayscale_to_phase,
-    generate_random_phase_mask,
-    generate_slit_phase_mask,
-    generate_donut_phase_mask,
     generate_horizontal_line,
+    normalize_output_image,
 )
 
 
@@ -52,7 +50,7 @@ class DiffractionSystem:
         )
 
     def set_input_image(self, input_image: np.ndarray) -> np.ndarray:
-        self.image = input_image
+        self.image = self.center_image(input_image)
 
     def set_input_images(self, input_images: List[np.ndarray]) -> np.ndarray:
         input_images_to_save = []
@@ -74,21 +72,56 @@ class DiffractionSystem:
         np.place(centered_image, center_mask, image)
         return centered_image
 
-    def calculate_images_at_output_plane(self):
-        self.output_images = []
-        for image in self.input_images:
-            E = image * self.phase_mask
-            k = 2 * np.pi / self.wavelength_mm
-            propagated_fft = fft2(
-                E
-                * np.exp(
-                    1j
-                    * k
-                    / (2 * self.screen_position_z_mm)
-                    * (self.xgrid**2 + self.ygrid**2)
-                )
+    def calculate_image_at_output_plane(self, input_image: np.ndarray) -> np.ndarray:
+        E = self.center_image(input_image) * self.phase_mask
+        k = 2 * np.pi / self.wavelength_mm
+        propagated_fft = fft2(
+            E
+            * np.exp(
+                1j
+                * k
+                / (2 * self.screen_position_z_mm)
+                * (self.xgrid**2 + self.ygrid**2)
             )
-            self.output_images.append(fftshift(propagated_fft))
+        )
+        return normalize_output_image(fftshift(propagated_fft))
+
+    def predict(self, output_image: np.ndarray, method="count_light") -> int:
+        if method == "count_light":
+            total_pixels_in_image = output_image.shape[0] * output_image.shape[1]
+            total_pixel_sum = np.sum(output_image)
+            if total_pixel_sum >= (0.25 * total_pixels_in_image * 255):
+                return 1
+            return 0
+
+    def generate_predictions(
+        self,
+        zero_images: np.ndarray,
+        one_images: np.ndarray,
+        prediction_method="count_light",
+    ) -> Tuple[float, float]:
+        zero_prediction_rate = 0
+        one_prediction_rate = 0
+        zero_predictions = list()
+        one_predictions = list()
+
+        for index in range(zero_images.shape[2]):
+            image_to_predict = self.calculate_image_at_output_plane(
+                zero_images[:, :, index]
+            )
+            res = self.predict(image_to_predict, prediction_method)
+            zero_predictions.append(1 if res == 0 else 0)
+        zero_prediction_rate = sum(zero_predictions) / len(zero_predictions)
+
+        for index in range(one_images.shape[2]):
+            image_to_predict = self.calculate_image_at_output_plane(
+                one_images[:, :, index]
+            )
+            res = self.predict(image_to_predict, prediction_method)
+            one_predictions.append(1 if res == 1 else 0)
+        one_prediction_rate = sum(one_predictions) / len(one_predictions)
+
+        return (zero_prediction_rate, one_prediction_rate)
 
     def plot_input_and_output(self) -> None:
         plot_limits = [
@@ -153,7 +186,7 @@ if __name__ == "__main__":
             num_samples_y=121,
             screen_position_z_mm=distance_mm,
         )
-        system.set_input_images(input_images)
-        system.set_phase_mask(phase_mask)
-        system.calculate_images_at_output_plane()
-        system.plot_input_and_output()
+        # system.set_input_images(input_images)
+        # system.set_phase_mask(phase_mask)
+        # system.calculate_images_at_output_plane()
+        # system.plot_input_and_output()
