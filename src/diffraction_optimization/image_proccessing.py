@@ -45,14 +45,22 @@ def generate_horizontal_line() -> np.ndarray:
     return phase_mask
 
 
-def mutate_phase_mask(phase_mask: np.ndarray) -> np.ndarray:
-    pixels_to_change = np.random.randint(0, 6)
-    for _ in range(pixels_to_change):
-        x, y = np.random.randint(0, 28, 2)
-        phase_mask[x, y] += 1 * np.pi
+def mutate_phase_mask(phase_mask: np.ndarray, temperature: float) -> np.ndarray:
+    size = int(temperature * 28)
+    mutated_block = np.random.rand(size, size) * np.pi * 2 * temperature
+    valid_start_points_w = []
+    valid_start_points_h = []
 
-    # Clamp values
-    phase_mask[phase_mask > 2 * np.pi] = 2 * np.pi
+    if phase_mask.shape[0] - size > 0:
+        valid_start_points_w.extend(list(range(phase_mask.shape[0] - size)))
+        valid_start_points_h.extend(list(range(phase_mask.shape[1] - size)))
+    else:
+        valid_start_points_w.append(0)
+        valid_start_points_h.append(0)
+
+    start_w = np.random.randint(len(valid_start_points_w))
+    start_h = np.random.randint(len(valid_start_points_h))
+    phase_mask[start_w : start_w + size, start_h : start_h + size] = mutated_block
     return phase_mask
 
 
