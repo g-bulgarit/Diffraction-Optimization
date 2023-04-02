@@ -25,3 +25,8 @@ def load_digit_images_from_dataset(
             digit_vectors.iloc[index]
         )
     return digit_matrix
+
+
+def save_final_phase_mask(phase_mask: np.ndarray, filepath: str) -> None:
+    with open(filepath, "wb+") as wfp:
+        np.save(wfp, phase_mask)
