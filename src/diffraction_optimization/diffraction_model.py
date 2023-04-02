@@ -73,7 +73,7 @@ class DiffractionSystem:
         return centered_image
 
     def calculate_image_at_output_plane(self, input_image: np.ndarray) -> np.ndarray:
-        E = self.center_image(input_image) * self.phase_mask
+        E = self.center_image(input_image) * np.exp(1j * self.phase_mask)
         k = 2 * np.pi / self.wavelength_mm
         propagated_fft = fft2(
             E
