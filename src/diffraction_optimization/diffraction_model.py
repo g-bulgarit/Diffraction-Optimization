@@ -86,42 +86,43 @@ class DiffractionSystem:
         )
         return normalize_output_image(fftshift(propagated_fft))
 
-    def predict(self, output_image: np.ndarray, method="count_light") -> int:
+    def predict(self, output_image: np.ndarray, method="count_light", **kwargs) -> int:
         if method == "count_light":
+            digits: List[int] = kwargs["digits"]
+            num_digits = len(digits)
             total_pixels_in_image = output_image.shape[0] * output_image.shape[1]
+            full_white_pixel_value = 255 * total_pixels_in_image
             total_pixel_sum = np.sum(output_image)
-            if total_pixel_sum >= (0.25 * total_pixels_in_image * 255):
-                return 1
-            return 0
+
+            step = 255 // num_digits
+            for i in range(1, num_digits):
+                if (total_pixel_sum <= ((i * step) / 255) * full_white_pixel_value * 0.25):
+                    return digits[i-1]
+            return digits[-1]
 
     def generate_predictions(
         self,
-        zero_images: np.ndarray,
-        one_images: np.ndarray,
+        digits_matrix: np.ndarray,
+        digits_list: List,
         prediction_method="count_light",
     ) -> Tuple[float, float]:
-        zero_prediction_rate = 0
-        one_prediction_rate = 0
-        zero_predictions = list()
-        one_predictions = list()
+        num_digits = digits_matrix.shape[3]
+        prediction_rate_vector = np.zeros((1, num_digits))
 
-        for index in range(zero_images.shape[2]):
-            image_to_predict = self.calculate_image_at_output_plane(
-                zero_images[:, :, index]
-            )
-            res = self.predict(image_to_predict, prediction_method)
-            zero_predictions.append(1 if res == 0 else 0)
-        zero_prediction_rate = sum(zero_predictions) / len(zero_predictions)
-
-        for index in range(one_images.shape[2]):
-            image_to_predict = self.calculate_image_at_output_plane(
-                one_images[:, :, index]
-            )
-            res = self.predict(image_to_predict, prediction_method)
-            one_predictions.append(1 if res == 1 else 0)
-        one_prediction_rate = sum(one_predictions) / len(one_predictions)
-
-        return (zero_prediction_rate, one_prediction_rate)
+        prediction_correctness_vector = list()
+        for digit_index in range(num_digits):
+            for image_index in range(digits_matrix.shape[2]):
+                image_to_predict = self.calculate_image_at_output_plane(
+                    digits_matrix[:, :, image_index, digit_index]
+                )
+                res = self.predict(image_to_predict, prediction_method, digits=digits_list)
+                prediction_correctness_vector.append(
+                    1 if res == digits_list[digit_index] else 0
+                )
+            prediction_rate_vector[:, digit_index] = sum(
+                prediction_correctness_vector
+            ) / len(prediction_correctness_vector)
+        return prediction_rate_vector
 
     def plot_input_and_output(self) -> None:
         plot_limits = [

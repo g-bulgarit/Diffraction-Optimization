@@ -7,17 +7,18 @@ from diffraction_optimization.image_proccessing import (
 )
 from diffraction_optimization.file_io import (
     load_dataset_csv_to_df,
-    load_digit_images_from_dataset,
     save_final_phase_mask,
+    load_specific_digits,
 )
 
 mnist_dataset = load_dataset_csv_to_df(
     "src/diffraction_optimization/assets/mnist_test.csv"
 )
-zero_digits = load_digit_images_from_dataset(mnist_dataset, 0, load_amt=50)
-one_digits = load_digit_images_from_dataset(mnist_dataset, 1, load_amt=50)
-zero_predicition_rates = list()
-one_predicition_rates = list()
+
+digits_to_load = [0, 1, 2]
+dataset_matrix = load_specific_digits(mnist_dataset, digits_to_load, 50)
+
+prediction_rates = list()
 average_prediction_rates = list()
 
 
@@ -33,8 +34,9 @@ def simulated_annealing_optimization():
 
     # Define algo hyperparameters
     temperature = 1
-    max_num_iterations = 100
+    max_num_iterations = 300
     bad_solutions_before_restart = 10
+    prediction_rates_over_time = np.zeros((max_num_iterations, len(digits_to_load)))
 
     # Initialize simulation parameters
     num_iterations = 0
@@ -53,12 +55,10 @@ def simulated_annealing_optimization():
 
     # Initialize system
     system.set_phase_mask(phase_mask)
-    zero_prediction_rate, one_prediction_rate = system.generate_predictions(
-        zero_images=zero_digits, one_images=one_digits
-    )
-    zero_predicition_rates.append(zero_prediction_rate)
-    one_predicition_rates.append(one_prediction_rate)
-    avg_prediction_rate = (zero_prediction_rate + one_prediction_rate) / 2
+    prediction_rates = system.generate_predictions(dataset_matrix, digits_to_load)
+    # zero_predicition_rates.append(zero_prediction_rate)
+    # one_predicition_rates.append(one_prediction_rate)
+    avg_prediction_rate = np.mean(prediction_rates)
     average_prediction_rates.append(avg_prediction_rate)
 
     while temperature > 0 and num_iterations < max_num_iterations:
@@ -70,13 +70,12 @@ def simulated_annealing_optimization():
             # Mutate phase mask
             new_phase_mask = mutate_phase_mask(phase_mask, temperature)
         system.set_phase_mask(new_phase_mask)
-        zero_prediction_rate, one_prediction_rate = system.generate_predictions(
-            zero_images=zero_digits, one_images=one_digits
-        )
-        zero_predicition_rates.append(zero_prediction_rate)
-        one_predicition_rates.append(one_prediction_rate)
-        avg_prediction_rate = (zero_prediction_rate + one_prediction_rate) / 2
+        prediction_rates = system.generate_predictions(dataset_matrix, digits_to_load)
+        # zero_predicition_rates.append(zero_prediction_rate)
+        # one_predicition_rates.append(one_prediction_rate)
+        avg_prediction_rate = np.mean(prediction_rates)
         average_prediction_rates.append(avg_prediction_rate)
+        prediction_rates_over_time[num_iterations, :] = prediction_rates
 
         if avg_prediction_rate > 0.9:
             # Training is good enough
@@ -98,8 +97,11 @@ def simulated_annealing_optimization():
 
         num_iterations += 1
 
+    final_predictions_over_time = prediction_rates_over_time[:num_iterations + 1, :]
     timenow = datetime.strftime(datetime.now(), "%d_%m_%Y_%H_%M")
-    output_path = f"models/phase_mask_{int(round(avg_prediction_rate, 2) * 100)}_{timenow}.npy"
+    output_path = (
+        f"models/phase_mask_{timenow}_{int(round(avg_prediction_rate, 2) * 100)}.npy"
+    )
     save_final_phase_mask(phase_mask, output_path)
 
     _, axes = plt.subplots(2, 1)
@@ -115,15 +117,14 @@ def simulated_annealing_optimization():
     plt.show()
 
     # Now evaluate on new data:
-    zero_digits_test_set = load_digit_images_from_dataset(
-        mnist_dataset, 0, load_amt=200
-    )[:, :, 51:]
-    one_digits_test_set = load_digit_images_from_dataset(
-        mnist_dataset, 1, load_amt=200
-    )[:, :, 51:]
+    evaluation_data_matrix = load_specific_digits(mnist_dataset, digits_to_load, 200)
 
-    (zero_true_positive_rate, one_true_positive_rate,) = system.generate_predictions(
-        zero_images=zero_digits_test_set, one_images=one_digits_test_set
+    (
+        zero_true_positive_rate,
+        one_true_positive_rate,
+    ) = system.generate_predictions(
+        zero_images=evaluation_data_matrix[:, :, :, 0],
+        one_images=evaluation_data_matrix[:, :, :, 1],
     )
 
     plt.figure()
@@ -136,10 +137,10 @@ def simulated_annealing_optimization():
     # Show results on zeros and ones
     comparisons_to_show = 5
 
-    for comparison_idx in range(comparisons_to_show):
-        random_index = np.random.randint(len(zero_digits_test_set))
-        zero_img = zero_digits_test_set[:, :, random_index]
-        one_img = one_digits_test_set[:, : , random_index]
+    for _ in range(comparisons_to_show):
+        random_index = np.random.randint(len(evaluation_data_matrix[:, :, :, 0]))
+        zero_img = evaluation_data_matrix[:, :, random_index, 0]
+        one_img = evaluation_data_matrix[:, :, random_index, 1]
         zero_output = system.calculate_image_at_output_plane(zero_img)
         one_output = system.calculate_image_at_output_plane(one_img)
 
