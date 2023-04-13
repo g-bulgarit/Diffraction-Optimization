@@ -4,6 +4,7 @@ from diffraction_optimization.file_io import (
     get_vectors_of_specific_digit,
     load_dataset_csv_to_df,
     load_digit_images_from_dataset,
+    load_specific_digits,
 )
 
 
@@ -24,3 +25,10 @@ def test_load_images_to_matrix(load_dataset):
     dataset = load_dataset
     for digit in range(10):
         load_digit_images_from_dataset(dataset, digit)
+
+
+def test_load_specific_digits(load_dataset):
+    dataset = load_dataset
+    digits_to_load = [1, 3, 4, 5]
+    # Verified with a plot
+    _ = load_specific_digits(dataset, digits_to_load, 50)

@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from typing import List
 from diffraction_optimization.image_proccessing import parse_mnist_digit_to_matrix
 
 
@@ -25,6 +26,19 @@ def load_digit_images_from_dataset(
             digit_vectors.iloc[index]
         )
     return digit_matrix
+
+
+def load_specific_digits(
+    dataset: pd.DataFrame, digit_list: List[int], samples_per_digit: int
+) -> np.ndarray:
+    num_digits = len(digit_list)
+    full_data = np.zeros((28, 28, samples_per_digit, num_digits))
+    for digit_index in range(len(digit_list)):
+        digit_to_load = digit_list[digit_index]
+        full_data[:, :, :, digit_index] = load_digit_images_from_dataset(
+            dataset, digit_to_load, samples_per_digit
+        )
+    return full_data
 
 
 def save_final_phase_mask(phase_mask: np.ndarray, filepath: str) -> None:
