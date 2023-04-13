@@ -27,6 +27,9 @@ In essence it's a search algorithm over the search space, but it utilizes a `tem
 
 Just like in nature, as the system cools the atoms can move less and they settle into a position of minimal potential energy. The algorithm mimcs this behavior by initially allowing big jumps over the search space (temperature is hot -> energy is high). This way, it's more likely that the solution will avoid local minima. Over time it the system temperature is lowered, and with it the probability to perform big jumps is lessened, allowing system to settle onto a good solution which is less likely to be a *local* minima.
 
+### **Results**
+The system is capable of distinguishing between `0` and `1` images with an accuracy of over 90%.
+
 
 ## **🛠 Development Setup**
 
