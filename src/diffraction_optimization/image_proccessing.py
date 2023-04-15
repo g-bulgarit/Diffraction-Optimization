@@ -70,3 +70,23 @@ def display_digit(digit_matrix: np.ndarray, digit_label=None) -> None:
         plt.title(f"{digit_label}")
     plt.colorbar()
     plt.show()
+
+
+def draw_confusion_matrix(confusion_matrix: np.ndarray):
+    fig, ax = plt.subplots()
+    ax.matshow(confusion_matrix, cmap=plt.cm.PiYG, alpha=0.3)
+    for i in range(confusion_matrix.shape[0]):
+        for j in range(confusion_matrix.shape[1]):
+            ax.text(
+                x=j,
+                y=i,
+                s=confusion_matrix[i, j],
+                va="center",
+                ha="center",
+                size="xx-large",
+            )
+
+    plt.xlabel("Predictions", fontsize=14)
+    plt.ylabel("Ground Truth", fontsize=14)
+    plt.title("Digit Confusion Matrix", fontsize=14)
+    plt.show()
