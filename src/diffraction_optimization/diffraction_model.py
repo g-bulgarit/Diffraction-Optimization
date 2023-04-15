@@ -105,7 +105,7 @@ class DiffractionSystem:
 
         if method == "splitx":
             end_idx = output_image.shape[1]
-            if (end_idx % 2 != 0):
+            if end_idx % 2 != 0:
                 # The image size is odd
                 end_idx = end_idx - 1
 
@@ -114,7 +114,9 @@ class DiffractionSystem:
             # Assign each digit a slice of x values
             regional_values = list()
             for x_region in range(num_digits):
-                value_in_region = np.sum(image_to_calculate_on[:, x_region : x_region + step])
+                value_in_region = np.sum(
+                    image_to_calculate_on[:, x_region : x_region + step]
+                )
                 regional_values.append(value_in_region)
             max_idx = np.argmax(regional_values)
             return digits[max_idx]
@@ -125,27 +127,47 @@ class DiffractionSystem:
         digits_list: List,
         prediction_method="count_light",
     ) -> Tuple[float, float]:
-        num_digits = digits_matrix.shape[3]
-        prediction_rate_vector = np.zeros((1, num_digits))
-
-        for digit_index in range(num_digits):
+        if len(digits_matrix.shape) == 3:
+            # Single prediction mode
+            num_digits = len(digits_list)
+            num_images = digits_matrix.shape[2]
+            prediction_correctness_vector = np.zeros((1, num_digits))
             prediction_vector = list()
-            for image_index in range(digits_matrix.shape[2]):
+            for image_index in range(num_images):
                 image_to_predict = self.calculate_image_at_output_plane(
-                    digits_matrix[:, :, image_index, digit_index]
+                    digits_matrix[:, :, image_index]
                 )
                 res = self.predict(
                     image_to_predict, prediction_method, digits=digits_list
                 )
                 prediction_vector.append(res)
-            correct_predictions = 0
             for value in prediction_vector:
-                if value == digits_list[digit_index]:
-                    correct_predictions += 1
-            prediction_rate_vector[:, digit_index] = correct_predictions / len(
-                prediction_vector
-            )
-        return prediction_rate_vector
+                for digit_idx in range(num_digits):
+                    if value == digits_list[digit_idx]:
+                        prediction_correctness_vector[:, digit_idx] += 1
+            normalized_predictions = prediction_correctness_vector / len(prediction_vector)
+            return normalized_predictions
+        else:
+            num_digits = digits_matrix.shape[3]
+            prediction_rate_vector = np.zeros((1, num_digits))
+            for digit_index in range(num_digits):
+                prediction_vector = list()
+                for image_index in range(digits_matrix.shape[2]):
+                    image_to_predict = self.calculate_image_at_output_plane(
+                        digits_matrix[:, :, image_index, digit_index]
+                    )
+                    res = self.predict(
+                        image_to_predict, prediction_method, digits=digits_list
+                    )
+                    prediction_vector.append(res)
+                correct_predictions = 0
+                for value in prediction_vector:
+                    if value == digits_list[digit_index]:
+                        correct_predictions += 1
+                prediction_rate_vector[:, digit_index] = correct_predictions / len(
+                    prediction_vector
+                )
+            return prediction_rate_vector
 
     def plot_input_and_output(self) -> None:
         plot_limits = [
@@ -180,6 +202,17 @@ class DiffractionSystem:
 
         plt.tight_layout()
         plt.show()
+
+    def generate_confusion_matrix(
+        self, digits_matrix: np.ndarray, digits_to_use: List[int], method="count_light"
+    ):
+        matrix_size = len(digits_to_use)
+        confusion_matrix = np.zeros((matrix_size, matrix_size))
+        for digit_index in range(len(digits_to_use)):
+            confusion_matrix[digit_index, :] = self.generate_predictions(
+                digits_matrix[:, :, :, digit_index], digits_to_use
+            )
+        return confusion_matrix
 
 
 if __name__ == "__main__":
