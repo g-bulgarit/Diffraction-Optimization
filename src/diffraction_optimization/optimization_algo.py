@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from diffraction_optimization.diffraction_model import DiffractionSystem
 from diffraction_optimization.image_proccessing import (
     mutate_phase_mask,
+    draw_confusion_matrix
 )
 from diffraction_optimization.file_io import (
     load_dataset_csv_to_df,
@@ -11,12 +12,15 @@ from diffraction_optimization.file_io import (
     load_specific_digits,
 )
 
-mnist_dataset = load_dataset_csv_to_df(
-    "src/diffraction_optimization/assets/mnist_test.csv"
+mnist_train_dataset = load_dataset_csv_to_df(
+    "src/diffraction_optimization/assets/mnist_train.csv"
+)
+mnist_test_dataset = load_dataset_csv_to_df(
+    "src/diffraction_optimization/assets/mnist_train.csv"
 )
 
 digits_to_load = [0, 1]
-dataset_matrix = load_specific_digits(mnist_dataset, digits_to_load, 200)
+dataset_matrix = load_specific_digits(mnist_train_dataset, digits_to_load, 200)
 
 prediction_rates = list()
 average_prediction_rates = list()
@@ -34,7 +38,7 @@ def simulated_annealing_optimization():
 
     # Define algo hyperparameters
     temperature = 1
-    max_num_iterations = 300
+    max_num_iterations = 400
     bad_solutions_before_restart = 10
     prediction_rates_over_time = np.zeros((max_num_iterations, len(digits_to_load)))
 
@@ -109,63 +113,67 @@ def simulated_annealing_optimization():
     plt.legend()
     plt.show()
 
+    test_digit_matrix = load_specific_digits(mnist_test_dataset, digits_to_load, 500)
+    confusion_matrix = system.generate_confusion_matrix(test_digit_matrix, digits_to_load)
+    draw_confusion_matrix(confusion_matrix)
+
     timenow = datetime.strftime(datetime.now(), "%d_%m_%Y_%H_%M")
     output_path = (
         f"models/phase_mask_{timenow}_{int(round(avg_prediction_rate, 2) * 100)}.npy"
     )
     save_final_phase_mask(phase_mask, output_path)
 
-    _, axes = plt.subplots(2, 1)
-    axes[0].plot(zero_predicition_rates, label="Zero: True Positive Rate")
-    axes[0].plot(one_predicition_rates, label="One: True Positive Rate")
-    axes[0].plot(average_prediction_rates, label="Average True Positive Rate")
-    axes[0].legend()
-    axes[0].set_xlabel("Iteration [#]")
-    axes[0].set_ylabel("Correct Prediction [%]")
+    # _, axes = plt.subplots(2, 1)
+    # axes[0].plot(zero_predicition_rates, label="Zero: True Positive Rate")
+    # axes[0].plot(one_predicition_rates, label="One: True Positive Rate")
+    # axes[0].plot(average_prediction_rates, label="Average True Positive Rate")
+    # axes[0].legend()
+    # axes[0].set_xlabel("Iteration [#]")
+    # axes[0].set_ylabel("Correct Prediction [%]")
 
-    axes[1].imshow(phase_mask)
-    axes[1].set_title("Final Phase Mask")
-    plt.show()
+    # axes[1].imshow(phase_mask)
+    # axes[1].set_title("Final Phase Mask")
+    # plt.show()
 
-    # Now evaluate on new data:
-    evaluation_data_matrix = load_specific_digits(mnist_dataset, digits_to_load, 200)
+    # # # Now evaluate on new data:
+    # # evaluation_data_matrix = load_specific_digits(mnist_dataset, digits_to_load, 200)
 
-    (
-        zero_true_positive_rate,
-        one_true_positive_rate,
-    ) = system.generate_predictions(
-        zero_images=evaluation_data_matrix[:, :, :, 0],
-        one_images=evaluation_data_matrix[:, :, :, 1],
-    )
+    # # (
+    # #     zero_true_positive_rate,
+    # #     one_true_positive_rate,
+    # # ) = system.generate_predictions(
+    # #     zero_images=evaluation_data_matrix[:, :, :, 0],
+    # #     one_images=evaluation_data_matrix[:, :, :, 1],
+    # # )
 
-    plt.figure()
-    plt.title("Classification Results on Test Set")
-    plt.bar("Zero True Positive Rate", zero_true_positive_rate)
-    plt.bar("One True Positive Rate", one_true_positive_rate)
-    plt.show()
-    pass
+    # plt.figure()
+    # plt.title("Classification Results on Test Set")
+    # plt.bar("Zero True Positive Rate", zero_true_positive_rate)
+    # plt.bar("One True Positive Rate", one_true_positive_rate)
+    # plt.show()
+    # pass
 
-    # Show results on zeros and ones
-    comparisons_to_show = 5
+    # # Show results on zeros and ones
+    # comparisons_to_show = 5
 
-    for _ in range(comparisons_to_show):
-        random_index = np.random.randint(len(evaluation_data_matrix[:, :, :, 0]))
-        zero_img = evaluation_data_matrix[:, :, random_index, 0]
-        one_img = evaluation_data_matrix[:, :, random_index, 1]
-        zero_output = system.calculate_image_at_output_plane(zero_img)
-        one_output = system.calculate_image_at_output_plane(one_img)
+    # for _ in range(comparisons_to_show):
+    #     random_index = np.random.randint(len(evaluation_data_matrix[:, :, :, 0]))
+    #     zero_img = evaluation_data_matrix[:, :, random_index, 0]
+    #     one_img = evaluation_data_matrix[:, :, random_index, 1]
+    #     zero_output = system.calculate_image_at_output_plane(zero_img)
+    #     one_output = system.calculate_image_at_output_plane(one_img)
 
-        _, axes = plt.subplots(2, 2)
-        axes[0, 0].imshow(zero_img)
-        axes[0, 0].set_title("Input Image: 0 Digit")
-        axes[0, 1].imshow(zero_output)
-        axes[0, 1].set_title("Output Image: 0 Digit")
+    #     _, axes = plt.subplots(2, 2)
+    #     axes[0, 0].imshow(zero_img)
+    #     axes[0, 0].set_title("Input Image: 0 Digit")
+    #     axes[0, 1].imshow(zero_output)
+    #     axes[0, 1].set_title("Output Image: 0 Digit")
 
-        axes[1, 0].imshow(one_img)
-        axes[1, 0].set_title("Input Image: 1 Digit")
-        axes[1, 1].imshow(one_output)
-        axes[1, 1].set_title("Output Image: 1 Digit")
-        plt.show()
+    #     axes[1, 0].imshow(one_img)
+    #     axes[1, 0].set_title("Input Image: 1 Digit")
+    #     axes[1, 1].imshow(one_output)
+    #     axes[1, 1].set_title("Output Image: 1 Digit")
+    #     plt.show()
 
 
 if __name__ == "__main__":
