@@ -15,8 +15,8 @@ mnist_dataset = load_dataset_csv_to_df(
     "src/diffraction_optimization/assets/mnist_test.csv"
 )
 
-digits_to_load = [0, 1, 2]
-dataset_matrix = load_specific_digits(mnist_dataset, digits_to_load, 50)
+digits_to_load = [0, 1]
+dataset_matrix = load_specific_digits(mnist_dataset, digits_to_load, 200)
 
 prediction_rates = list()
 average_prediction_rates = list()
@@ -42,7 +42,7 @@ def simulated_annealing_optimization():
     num_iterations = 0
     bad_solution_counter = 0
     # phase_mask = generate_horizontal_line()
-    phase_mask = np.zeros((28, 28))
+    phase_mask = np.random.rand(28, 28)
     best_phase_mask = phase_mask
 
     system = DiffractionSystem(
@@ -55,9 +55,9 @@ def simulated_annealing_optimization():
 
     # Initialize system
     system.set_phase_mask(phase_mask)
-    prediction_rates = system.generate_predictions(dataset_matrix, digits_to_load)
-    # zero_predicition_rates.append(zero_prediction_rate)
-    # one_predicition_rates.append(one_prediction_rate)
+    prediction_rates = system.generate_predictions(
+        dataset_matrix, digits_to_load, prediction_method="count_light"
+    )
     avg_prediction_rate = np.mean(prediction_rates)
     average_prediction_rates.append(avg_prediction_rate)
 
@@ -70,14 +70,14 @@ def simulated_annealing_optimization():
             # Mutate phase mask
             new_phase_mask = mutate_phase_mask(phase_mask, temperature)
         system.set_phase_mask(new_phase_mask)
-        prediction_rates = system.generate_predictions(dataset_matrix, digits_to_load)
-        # zero_predicition_rates.append(zero_prediction_rate)
-        # one_predicition_rates.append(one_prediction_rate)
+        prediction_rates = system.generate_predictions(
+            dataset_matrix, digits_to_load, prediction_method="count_light"
+        )
         avg_prediction_rate = np.mean(prediction_rates)
         average_prediction_rates.append(avg_prediction_rate)
         prediction_rates_over_time[num_iterations, :] = prediction_rates
 
-        if avg_prediction_rate > 0.9:
+        if avg_prediction_rate > 0.97:
             # Training is good enough
             break
 
@@ -97,7 +97,18 @@ def simulated_annealing_optimization():
 
         num_iterations += 1
 
-    final_predictions_over_time = prediction_rates_over_time[:num_iterations + 1, :]
+    final_predictions_over_time = prediction_rates_over_time[: num_iterations + 1, :]
+    plt.plot(average_prediction_rates, label="Average Prediction Rate")
+    for index, digit in enumerate(digits_to_load):
+        plt.plot(
+            final_predictions_over_time[:, index], label=f"{digit} Prediction Rate"
+        )
+    plt.title("Average correct prediction rates as a function of iteration number")
+    plt.xlabel("Iteration [#]")
+    plt.ylabel("Prediction rate")
+    plt.legend()
+    plt.show()
+
     timenow = datetime.strftime(datetime.now(), "%d_%m_%Y_%H_%M")
     output_path = (
         f"models/phase_mask_{timenow}_{int(round(avg_prediction_rate, 2) * 100)}.npy"
