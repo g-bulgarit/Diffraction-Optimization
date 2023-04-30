@@ -115,7 +115,7 @@ class DiffractionSystem:
             regional_values = list()
             for x_region in range(num_digits):
                 value_in_region = np.sum(
-                    image_to_calculate_on[:, x_region : x_region + step]
+                    image_to_calculate_on[:, (x_region * step) : (x_region + 1) * step]
                 )
                 regional_values.append(value_in_region)
             max_idx = np.argmax(regional_values)
