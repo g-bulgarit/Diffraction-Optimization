@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from typing import List
 
 
 def parse_mnist_digit_to_matrix(dataset_digit_vector: pd.Series) -> np.ndarray:
@@ -72,7 +73,7 @@ def display_digit(digit_matrix: np.ndarray, digit_label=None) -> None:
     plt.show()
 
 
-def draw_confusion_matrix(confusion_matrix: np.ndarray):
+def draw_confusion_matrix(confusion_matrix: np.ndarray, digits: List):
     fig, ax = plt.subplots()
     ax.matshow(confusion_matrix, cmap=plt.cm.PiYG, alpha=0.3)
     for i in range(confusion_matrix.shape[0]):
@@ -83,9 +84,10 @@ def draw_confusion_matrix(confusion_matrix: np.ndarray):
                 s=confusion_matrix[i, j],
                 va="center",
                 ha="center",
-                size="xx-large",
+                size="large",
             )
-
+    ax.set_xticklabels([""]+digits)
+    ax.set_yticklabels([""]+digits)
     plt.xlabel("Predictions", fontsize=14)
     plt.ylabel("Ground Truth", fontsize=14)
     plt.title("Digit Confusion Matrix", fontsize=14)
